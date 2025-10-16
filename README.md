@@ -5,7 +5,7 @@ A terminal chat client with tool-based conversation history access, based (loose
 It will *ideally* give me (and maybe you!) one chat context + retrieval forever, in the terminal, for all the errata / to-do stuff which God knows where I saved. I plan on just leaving this open in one of my 'always open' terminal windows for a few weeks to see what happens.
 
 
-This implementation has only been minimally tested with GLM 4.6 in Ghostty on Mac "OS 26". The code is clean, but the actual action of doing bad RAG (brag?) on my own conversation history - where I probably repeat the same words often - is untested, since the paper is fresh.
+This implementation has only been minimally tested with GLM 4.6 in Ghostty on Mac "OS 26". The code is clean, but the actual action of doing bad RAG (brag?) - a fuzzy search with more features - on my own conversation history (where I probably repeat the same words often) is untested, since the paper is so new, and accumulating real history takes time.
 
 ## What It Does
 
