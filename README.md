@@ -1,5 +1,8 @@
 # infinite chat
 
+<img width="1675" height="1070" alt="Infinite Chat" src="https://github.com/user-attachments/assets/44ee8e86-226a-45de-96d4-40c8222ce3af" />
+
+
 A terminal chat client with tool-based conversation history access, based (loosely - no secondary model) on Retrieval-Augmented Language Models (RLM). Originally based on [research by Alex L. Zhang and Omar Khattab from MIT OASYS lab](https://alexzhang13.github.io/blog/2025/rlm/).
 
 It will *ideally* give me (and maybe you!) one chat context + retrieval forever, in the terminal, for all the errata / to-do stuff which God knows where I saved. I plan on just leaving this open in one of my 'always open' terminal windows for a few weeks to see what happens.
