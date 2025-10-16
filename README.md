@@ -1,11 +1,11 @@
 # infinite chat
 
-A terminal chat client with tool-based conversation history access, based (poorly) on Retrieval-Augmented Language Models (RLM). Originally based on research by Alex L. Zhang and Omar Khattab from MIT OASYS lab.
+A terminal chat client with tool-based conversation history access, based (loosely - no secondary model) on Retrieval-Augmented Language Models (RLM). Originally based on [research by Alex L. Zhang and Omar Khattab from MIT OASYS lab](https://alexzhang13.github.io/blog/2025/rlm/).
 
 It will *ideally* give me (and maybe you!) one chat context + retrieval forever, in the terminal, for all the errata / to-do stuff which God knows where I saved. I plan on just leaving this open in one of my 'always open' terminal windows for a few weeks to see what happens.
 
 
-This implementation has only been minimally tested with GLM 4.6 in Ghostty on Mac "OS 26".
+This implementation has only been minimally tested with GLM 4.6 in Ghostty on Mac "OS 26". The code is clean, but the actual action of doing bad RAG (brag?) on my own conversation history - where I probably repeat the same words often - is untested, since the paper is fresh.
 
 ## What It Does
 
