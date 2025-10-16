@@ -1,18 +1,22 @@
 # infinite chat
 
-A terminal chat client with conversation history management based on Retrieval-Augmented Language Models (RLM). Originally based on research by Alex L. Zhang and Omar Khattab from MIT OASYS lab.
+A terminal chat client with tool-based conversation history access, based (poorly) on Retrieval-Augmented Language Models (RLM). Originally based on research by Alex L. Zhang and Omar Khattab from MIT OASYS lab.
 
-This implementation has only been minimally tested with GLM 4.6. I wanted to code something for personal use and see if a simple implementation could work as a permanent to-do list.
+It will *ideally* give me (and maybe you!) one chat context + retrieval forever, in the terminal, for all the errata / to-do stuff which God knows where I saved. I plan on just leaving this open in one of my 'always open' terminal windows for a few weeks to see what happens.
+
+
+This implementation has only been minimally tested with GLM 4.6 in Ghostty on Mac "OS 26".
 
 ## What It Does
 
-- Terminal chat client with persistent conversation storage
-- Intelligent search through conversation history using fuzzy matching
-- Context window management with automatic sliding window (~200k tokens)
-- LLM can search and expand conversation context when needed
-- Secondary conversation for things you don't want to be remembered for (switch with /switch)
+- Extremely minimally-styled terminal chat client with persistent conversation storage in JSON
+- Tool access semi-intelligent search through conversation history using fuzzy matching
+- Context window 'management' with automatic poor-man's sliding window (~200k tokens)
+- LLM can search and expand conversation context when needed (theoretically!)
+- A 'secondary conversation' available via /switch for whatever you don't want to be remembered for - goes to an entirely separate JSON file, loads an entirely separate context.
 - Local file storage for all conversations
-- There are also some slash commands that add semi-useful functionality, currently undocumented
+- There are also some slash commands that add semi-useful functionality, currently undocumented.
+- In future, if it's useful, I might build some different frontends for remote access if SSHing in is too annoying.
 
 ## Setup
 
