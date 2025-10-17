@@ -32,5 +32,6 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=8421,
         reload=True,
-        log_level="info"
+        log_level="info",
+        timeout_keep_alive=1200  # 20 minutes keep-alive for long RLM processing
     )

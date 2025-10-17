@@ -10,7 +10,7 @@ load_dotenv()
 class LLMClient:
     def __init__(self, provider: Optional[str] = None):
         self.provider = provider or os.getenv("LLM_PROVIDER", "zai")
-        self.client = httpx.AsyncClient(timeout=120.0)
+        self.client = httpx.AsyncClient(timeout=300.0)  # 5 minutes for individual LLM calls
 
         if self.provider == "zai":
             self.api_key = os.getenv("ZAI_API_KEY")
@@ -124,14 +124,20 @@ Your process:
 Remember: The conversation history is infinite, but you can intelligently navigate it using these tools."""
 
     async def chat(self, messages: List[Dict[str, Any]], tools: Dict[str, Any],
-                   context_window_size: int = 200000) -> Dict[str, Any]:
+                   context_window_size: int = 200000, custom_system_prompt: str = None) -> Dict[str, Any]:
         """Send chat request to LLM API with tools."""
 
         # Prepare the messages with system prompt
-        system_message = {
-            "role": "system",
-            "content": self.get_system_prompt(context_window_size)
-        }
+        if custom_system_prompt:
+            system_message = {
+                "role": "system",
+                "content": custom_system_prompt
+            }
+        else:
+            system_message = {
+                "role": "system",
+                "content": self.get_system_prompt(context_window_size)
+            }
 
         request_messages = [system_message] + messages
 
@@ -139,7 +145,7 @@ Remember: The conversation history is infinite, but you can intelligently naviga
         payload = {
             "model": self.model,
             "messages": request_messages,
-            "tools": self.get_tools_schema(),
+            "tools": tools.get("tools", self.get_tools_schema()) if isinstance(tools, dict) else (tools if tools else self.get_tools_schema()),
             "tool_choice": "auto",
             "stream": False,
             "max_tokens": 4000,
