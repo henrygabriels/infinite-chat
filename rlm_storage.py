@@ -165,6 +165,49 @@ class RLMStorage:
             "mode_active": self.is_rlm_conversation(conversation_id)
         }
 
+    def migrate_from_rlm_mode(self, conversation_id: str) -> bool:
+        """Migrate RLM conversation history to standard storage when exiting RLM mode."""
+        rlm_messages = self.load_rlm_conversation(conversation_id)
+
+        if not rlm_messages:
+            return False  # No RLM history to migrate
+
+        # Convert RLM messages to standard format and save to standard storage
+        standard_messages = []
+        for msg in rlm_messages:
+            standard_msg = {
+                "id": msg.get("id", f"migrated_{len(standard_messages)}"),
+                "role": msg.get("role", "user"),
+                "content": msg.get("content", ""),
+                "timestamp": msg.get("timestamp", datetime.now().isoformat())
+            }
+            standard_messages.append(standard_msg)
+
+        # Save to standard storage
+        self.standard_storage.save_conversation(conversation_id, standard_messages)
+
+        # Optionally, clean up RLM storage after successful migration
+        # Commented out to preserve RLM logs in case user wants to switch back
+        # self._cleanup_rlm_storage(conversation_id)
+
+        return True
+
+    def _cleanup_rlm_storage(self, conversation_id: str) -> None:
+        """Clean up RLM storage files for a conversation."""
+        rlm_conversation_id = self.get_rlm_conversation_id(conversation_id)
+        agent_conversation_id = self.get_rlm_agent_conversation_id(conversation_id)
+
+        rlm_file = os.path.join(self.rlm_dir, f"{rlm_conversation_id}.json")
+        agent_file = os.path.join(self.rlm_agent_dir, f"{agent_conversation_id}.json")
+
+        try:
+            if os.path.exists(rlm_file):
+                os.remove(rlm_file)
+            if os.path.exists(agent_file):
+                os.remove(agent_file)
+        except Exception:
+            pass  # Ignore cleanup errors
+
     def list_rlm_conversations(self) -> List[str]:
         """List all conversations that have RLM mode enabled."""
         if not os.path.exists(self.rlm_dir):

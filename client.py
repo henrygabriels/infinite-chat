@@ -100,15 +100,28 @@ class SimpleChatClient:
         self._save_active_conversation(self.conversation_id)
         return f"Switched to {name} conversation"
 
-    def _toggle_rlm_mode(self) -> str:
+    async def _toggle_rlm_mode(self) -> str:
         """Toggle RLM mode and return confirmation message."""
         self.rlm_mode = not self.rlm_mode
         self._save_rlm_mode(self.rlm_mode)
 
         if self.rlm_mode:
-            return "✨ RLM Mode activated - Using Retrieval-Augmented Language Model for intelligent context retrieval"
+            return "RLM Mode activated - Using Retrieval-Augmented Language Model for intelligent context retrieval"
         else:
-            return "RLM Mode deactivated - Using standard chat mode"
+            # When exiting RLM mode, migrate conversation history to standard storage
+            try:
+                url = f"http://localhost:8421/api/rlm-exit/{self.conversation_id}"
+                response = await self.client.post(url, timeout=30.0)
+                response.raise_for_status()
+                result = response.json()
+
+                if result.get("migrated", False):
+                    return "RLM Mode deactivated - Conversation history migrated to standard storage"
+                else:
+                    return "RLM Mode deactivated - No history to migrate"
+            except Exception:
+                # Even if migration fails, still deactivate RLM mode
+                return "RLM Mode deactivated - Note: History migration may have failed"
 
     def _toggle_agent_logs(self, show: bool) -> str:
         """Toggle agent logs display and return confirmation message."""
@@ -254,7 +267,7 @@ class SimpleChatClient:
 
                 # Check for RLM mode toggle
                 if message == "/rlm":
-                    rlm_msg = self._toggle_rlm_mode()
+                    rlm_msg = await self._toggle_rlm_mode()
                     print(f"* {rlm_msg}")
                     continue
 

@@ -127,7 +127,12 @@ async def execute_tool_calls(tool_calls: List[Dict[str, Any]], conversation_id: 
 
         try:
             if function_name == "search_conversations":
-                messages = storage.load_conversation(conversation_id)
+                # Check both RLM and standard storage for messages
+                if rlm_storage.is_rlm_conversation(conversation_id):
+                    messages = rlm_storage.get_full_history_for_search(conversation_id)
+                else:
+                    messages = storage.load_conversation(conversation_id)
+
                 results = search.search_messages(messages, arguments["query"], arguments.get("limit", 5))
                 tool_results.append({
                     "tool_call_id": tool_call["id"],
@@ -136,7 +141,12 @@ async def execute_tool_calls(tool_calls: List[Dict[str, Any]], conversation_id: 
                 })
 
             elif function_name == "expand_context":
-                messages = storage.load_conversation(conversation_id)
+                # Check both RLM and standard storage for messages
+                if rlm_storage.is_rlm_conversation(conversation_id):
+                    messages = rlm_storage.get_full_history_for_search(conversation_id)
+                else:
+                    messages = storage.load_conversation(conversation_id)
+
                 expanded = search.expand_context(
                     messages,
                     arguments["message_id"],
@@ -165,10 +175,18 @@ async def chat(request: ChatRequest):
         # Use provided conversation_id or create new one
         conversation_id = request.conversation_id or str(uuid.uuid4())
 
-        # Load conversation
-        messages = storage.load_conversation(conversation_id)
+        # Load conversation from appropriate storage
+        if rlm_storage.is_rlm_conversation(conversation_id):
+            # If conversation is in RLM mode but user is using standard chat,
+            # they've likely exited RLM mode, so try to load migrated data first,
+            # then fall back to RLM data if no standard data exists
+            messages = storage.load_conversation(conversation_id)
+            if not messages:  # No standard data, load from RLM
+                messages = rlm_storage.load_rlm_conversation(conversation_id)
+        else:
+            messages = storage.load_conversation(conversation_id)
 
-        # Add user message
+        # Add user message to standard storage
         user_message_id = storage.append_message(conversation_id, "user", request.message)
         messages.append({
             "role": "user",
@@ -181,7 +199,11 @@ async def chat(request: ChatRequest):
 
         # Initial chat request
         client = get_llm_client()
-        response = await client.chat(context_messages, {}, request.context_window_size)
+        standard_tools = {
+            "tools": client.get_tools_schema(),
+            "system_prompt": client.get_system_prompt(request.context_window_size)
+        }
+        response = await client.chat(context_messages, standard_tools, request.context_window_size)
 
         # Handle tool calls if present
         if "tool_calls" in response.get("choices", [{}])[0].get("message", {}):
@@ -196,7 +218,7 @@ async def chat(request: ChatRequest):
             context_messages.extend(tool_results)
 
             # Get final response after tool execution
-            final_response = await client.chat(context_messages, {}, request.context_window_size)
+            final_response = await client.chat(context_messages, standard_tools, request.context_window_size)
 
             assistant_content = final_response["choices"][0]["message"]["content"]
         else:
@@ -205,8 +227,11 @@ async def chat(request: ChatRequest):
         # Save assistant response
         assistant_message_id = storage.append_message(conversation_id, "assistant", assistant_content)
 
-        # Get context stats
-        updated_messages = storage.load_conversation(conversation_id)
+        # Get context stats from appropriate storage
+        if rlm_storage.is_rlm_conversation(conversation_id):
+            updated_messages = rlm_storage.load_rlm_conversation(conversation_id)
+        else:
+            updated_messages = storage.load_conversation(conversation_id)
         stats = context_window.get_window_stats(context_window.get_context_window(updated_messages))
 
         return ChatResponse(
@@ -368,6 +393,31 @@ async def get_rlm_logs(conversation_id: str):
             conversation_logs=conversation_logs,
             stats=stats
         )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/rlm-exit/{conversation_id}")
+async def exit_rlm_mode(conversation_id: str):
+    """Exit RLM mode and migrate conversation history to standard storage."""
+    try:
+        # Check if conversation is in RLM mode
+        if not rlm_storage.is_rlm_conversation(conversation_id):
+            return {"message": "Conversation is not in RLM mode", "migrated": False}
+
+        # Migrate RLM conversation history to standard storage
+        migrated = rlm_storage.migrate_from_rlm_mode(conversation_id)
+
+        if migrated:
+            return {
+                "message": "Successfully migrated RLM conversation to standard storage",
+                "migrated": True
+            }
+        else:
+            return {
+                "message": "No RLM conversation history to migrate",
+                "migrated": False
+            }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
